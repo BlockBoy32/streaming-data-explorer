@@ -23,8 +23,8 @@
       </div>
 
       <div class="chart-wrapper">
-        <h2>Streams Over Time</h2>
-        <canvas id="streamsOverTimeChart"></canvas>
+        <h2>Streams Heatmap (Day of Week & Time of Day)</h2>
+        <canvas id="streamsHeatmapChart"></canvas>
       </div>
     </div>
   </div>
@@ -45,19 +45,106 @@ export default {
       const topArtistsChartData = processTopArtistsData(data);
       const artistPieChartData = processArtistPieData(data);
       const topTracksChartData = processTopTracksData(data);
-      const streamsOverTimeData = processStreamsOverTimeData(data);
+      const heatmapData = processHeatmapData(data);
 
       createStreamsChart(streamsChartData);
       createTopArtistsChart(topArtistsChartData);
       createArtistPieChart(artistPieChartData);
       createTopTracksChart(topTracksChartData);
-      createStreamsOverTimeChart(streamsOverTimeData);
+      createHeatmapChart(heatmapData);
     };
 
     const loadStreamingData = () => {
       const requireContext = require.context('./assets/anthony-data', false, /StreamingHistory_music_.*\.json$/);
       const allData = requireContext.keys().map(requireContext); 
       return allData.flat(); 
+    };
+
+    const processHeatmapData = (data) => {
+      const heatmap = {};
+      for (let i = 0; i < 7; i++) {
+        heatmap[i] = {};
+        for (let j = 0; j < 24; j++) {
+          heatmap[i][j] = 0;
+        }
+      }
+
+      data.forEach(item => {
+        const dateTime = new Date(item.endTime);
+        const dayOfWeek = dateTime.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
+        const hourOfDay = dateTime.getHours(); // 0 to 23 hours
+        heatmap[dayOfWeek][hourOfDay] += item.msPlayed;
+      });
+
+      const result = [];
+      for (let day = 0; day < 7; day++) {
+        for (let hour = 0; hour < 24; hour++) {
+          result.push({
+            x: hour,
+            y: day,
+            r: Math.sqrt(heatmap[day][hour]) / 1000, // Adjust the size based on the value
+            value: heatmap[day][hour]
+          });
+        }
+      }
+
+      return result;
+    };
+
+    const createHeatmapChart = (data) => {
+      const ctx = document.getElementById('streamsHeatmapChart').getContext('2d');
+
+      new Chart(ctx, {
+        type: 'bubble',
+        data: {
+          datasets: [{
+            label: 'Heatmap of Streams by Time',
+            data: data,
+            backgroundColor: 'rgba(0, 150, 136, 0.6)', // Greenish color with transparency
+            borderColor: 'rgba(0, 150, 136, 1)', // Solid green for border
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              ticks: {
+                stepSize: 1,
+                max: 23,
+                callback: (value) => `${value}:00` // Show time of day in hours
+              },
+              title: {
+                display: true,
+                text: 'Hour of Day'
+              }
+            },
+            y: {
+              type: 'linear',
+              ticks: {
+                stepSize: 1,
+                max: 6,
+                callback: (value) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][value]
+              },
+              title: {
+                display: true,
+                text: 'Day of Week'
+              }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Streams: ${context.raw.value}`;
+                }
+              }
+            }
+          }
+        }
+      });
     };
 
     const processStreamsData = (data) => {
@@ -72,7 +159,7 @@ export default {
     const processTopArtistsData = (data) => {
       const artistCounts = {};
       data.forEach(item => {
-        artistCounts[item.artistName] = (artistCounts[item.artistName] || 0) + item.msPlayed; 
+        artistCounts[item.artistName] = (artistCounts[item.artistName] || 0) + item.msPlayed;
       });
       return Object.entries(artistCounts)
         .map(([artist, totalStreams]) => ({ artist, totalStreams }))
@@ -114,15 +201,6 @@ export default {
         .slice(0, 10);
     };
 
-    const processStreamsOverTimeData = (data) => {
-      const dailyCounts = {};
-      data.forEach(item => {
-        const date = item.endTime.split(' ')[0]; 
-        dailyCounts[date] = (dailyCounts[date] || 0) + item.msPlayed;
-      });
-      return Object.entries(dailyCounts).map(([date, count]) => ({ date, count }));
-    };
-
     const createArtistPieChart = (data) => {
       const ctx = document.getElementById('artistPieChart').getContext('2d');
       const labels = data.map(item => item.artist);
@@ -156,33 +234,6 @@ export default {
             label: 'Total Streams (ms)',
             data: counts,
             backgroundColor: 'lightcoral',
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          },
-          responsive: true
-        }
-      });
-    };
-
-    const createStreamsOverTimeChart = (data) => {
-      const ctx = document.getElementById('streamsOverTimeChart').getContext('2d');
-      const labels = data.map(item => item.date);
-      const counts = data.map(item => item.count);
-
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Total Streams Over Time (ms)',
-            data: counts,
-            borderColor: 'blue',
-            fill: false,
           }]
         },
         options: {
@@ -288,4 +339,3 @@ canvas {
     height: auto !important;
 }
 </style>
-``
