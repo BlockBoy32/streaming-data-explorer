@@ -2,20 +2,30 @@
   <div id="app">
     <h1>Streaming Data Explorer</h1>
     <div class="chart-container">
-      <h2>Number of Streams by Month</h2>
-      <canvas id="streamsChart" width="100" height="50"></canvas>
+      <div class="chart-wrapper">
+        <h2>Number of Streams by Month</h2>
+        <canvas id="streamsChart"></canvas>
+      </div>
       
-      <h2>Top 10 Artists by Total Streams</h2>
-      <canvas id="topArtistsChart" width="50" height="50"></canvas>
+      <div class="chart-wrapper">
+        <h2>Top 10 Artists by Total Streams</h2>
+        <canvas id="topArtistsChart"></canvas>
+      </div>
 
-      <h2>Total Streams by Artist</h2>
-      <canvas id="artistPieChart" width="50" height="50"></canvas>
+      <div class="chart-wrapper">
+        <h2>Total Streams by Artist</h2>
+        <canvas id="artistPieChart"></canvas>
+      </div>
 
-      <h2>Most Played Tracks</h2>
-      <canvas id="topTracksChart" width="50" height="50"></canvas>
+      <div class="chart-wrapper">
+        <h2>Most Played Tracks</h2>
+        <canvas id="topTracksChart"></canvas>
+      </div>
 
-      <h2>Streams Over Time</h2>
-      <canvas id="streamsOverTimeChart" width="50" height="50"></canvas>
+      <div class="chart-wrapper">
+        <h2>Streams Over Time</h2>
+        <canvas id="streamsOverTimeChart"></canvas>
+      </div>
     </div>
   </div>
 </template>
@@ -46,15 +56,15 @@ export default {
 
     const loadStreamingData = () => {
       const requireContext = require.context('./assets/anthony-data', false, /StreamingHistory_music_.*\.json$/);
-      const allData = requireContext.keys().map(requireContext); // Load all matching JSON files
-      return allData.flat(); // Flatten the array to combine all data into a single array
+      const allData = requireContext.keys().map(requireContext); 
+      return allData.flat(); 
     };
 
     const processStreamsData = (data) => {
       const monthlyCounts = {};
       data.forEach(item => {
-        const month = item.endTime.split('-')[1]; // Extract month from endTime
-        monthlyCounts[month] = (monthlyCounts[month] || 0) + item.msPlayed; // Sum msPlayed
+        const month = item.endTime.split('-')[1]; 
+        monthlyCounts[month] = (monthlyCounts[month] || 0) + item.msPlayed;
       });
       return Object.entries(monthlyCounts).map(([month, count]) => ({ month, count }));
     };
@@ -62,12 +72,12 @@ export default {
     const processTopArtistsData = (data) => {
       const artistCounts = {};
       data.forEach(item => {
-        artistCounts[item.artistName] = (artistCounts[item.artistName] || 0) + item.msPlayed; // Sum msPlayed
+        artistCounts[item.artistName] = (artistCounts[item.artistName] || 0) + item.msPlayed; 
       });
       return Object.entries(artistCounts)
         .map(([artist, totalStreams]) => ({ artist, totalStreams }))
-        .sort((a, b) => b.totalStreams - a.totalStreams) // Sort by totalStreams
-        .slice(0, 10); // Get top 10 artists
+        .sort((a, b) => b.totalStreams - a.totalStreams)
+        .slice(0, 10);
     };
 
     const processArtistPieData = (data) => {
@@ -79,15 +89,15 @@ export default {
       const topArtists = Object.entries(artistCounts)
         .map(([artist, totalStreams]) => ({ artist, totalStreams }))
         .sort((a, b) => b.totalStreams - a.totalStreams)
-        .slice(0, 10); // Get top 10 artists
+        .slice(0, 10); 
 
       const otherTotal = Object.entries(artistCounts)
-        .slice(10) // Get remaining artists
-        .reduce((sum, [, totalStreams]) => sum + totalStreams, 0); // Sum their streams
+        .slice(10)
+        .reduce((sum, [, totalStreams]) => sum + totalStreams, 0); 
 
       const topArtistsData = topArtists.map(({ artist, totalStreams }) => ({ artist, totalStreams }));
       if (otherTotal > 0) {
-        topArtistsData.push({ artist: 'Other', totalStreams: otherTotal }); // Add "Other" category
+        topArtistsData.push({ artist: 'Other', totalStreams: otherTotal });
       }
 
       return topArtistsData;
@@ -107,7 +117,7 @@ export default {
     const processStreamsOverTimeData = (data) => {
       const dailyCounts = {};
       data.forEach(item => {
-        const date = item.endTime.split(' ')[0]; // Extract date
+        const date = item.endTime.split(' ')[0]; 
         dailyCounts[date] = (dailyCounts[date] || 0) + item.msPlayed;
       });
       return Object.entries(dailyCounts).map(([date, count]) => ({ date, count }));
@@ -153,7 +163,8 @@ export default {
             y: {
               beginAtZero: true
             }
-          }
+          },
+          responsive: true
         }
       });
     };
@@ -179,7 +190,8 @@ export default {
             y: {
               beginAtZero: true
             }
-          }
+          },
+          responsive: true
         }
       });
     };
@@ -206,7 +218,8 @@ export default {
             y: {
               beginAtZero: true
             }
-          }
+          },
+          responsive: true
         }
       });
     };
@@ -231,7 +244,8 @@ export default {
             y: {
               beginAtZero: true
             }
-          }
+          },
+          responsive: true
         }
       });
     };
@@ -249,20 +263,29 @@ body {
 
 h1 {
     color: #333;
+    text-align: center;
 }
 
 h2 {
     margin-top: 10px;
+    text-align: center;
 }
 
 .chart-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
+    justify-items: center;
+}
+
+.chart-wrapper {
+    width: 100%;
+    max-width: 500px;
 }
 
 canvas {
-    max-width: 100px;
-    height: 50px;
+    width: 100% !important;
+    height: auto !important;
 }
 </style>
+``
